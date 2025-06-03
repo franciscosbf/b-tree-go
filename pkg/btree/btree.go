@@ -4,73 +4,70 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
-	"strings"
 	"sync"
 )
 
-type Entry[K cmp.Ordered] struct {
-	key   K
-	value any
+type entry[K cmp.Ordered] struct {
+	k K
+	v any
 }
 
-func (e *Entry[K]) String() string {
+func (e *entry[K]) String() string {
 	return fmt.Sprintf(
-		"&Entry[string]{key:\"%v\",value:%v}",
-		e.key, e.value)
+		"entry{key: %v, value: %v}",
+		e.k, e.v)
 }
 
-type Node[K cmp.Ordered] struct {
+type node[K cmp.Ordered] struct {
 	leaf    bool
-	entries []*Entry[K]
-	childs  []*Node[K]
+	entries []*entry[K]
+	childs  []*node[K]
 }
 
-func (n *Node[K]) String() string {
+func (n *node[K]) String() string {
 	return fmt.Sprintf(
-		"&Node[string]{leaf:%v,entries:[]*Entry[string]%v,childs:[]*Node[string]%v}",
-		n.leaf,
-		strings.NewReplacer("[", "{", "]", "}", " ", ",").Replace(fmt.Sprint(n.entries)),
-		strings.NewReplacer("[", "{", "]", "}", " ", ",").Replace(fmt.Sprint(n.childs)))
+		"node{leaf: %v, entries: %v, childs: %v}",
+		n.leaf, n.entries, n.childs)
 }
 
 type BTree[K cmp.Ordered] struct {
 	mutex sync.RWMutex
 	t     int
-	root  *Node[K]
+	root  *node[K]
 }
 
-func (bt *BTree[K]) isFull(node *Node[K]) bool {
-	return len(node.entries) == (2*bt.t)-1
+func (bt *BTree[K]) isFull(n *node[K]) bool {
+	return len(n.entries) == (2*bt.t)-1
 }
 
-func (bt *BTree[K]) search(node *Node[K], key K) any {
-	entries := node.entries
+func (bt *BTree[K]) search(n *node[K], k K) any {
+	entries := n.entries
 	i := 0
 
-	for ; i < len(entries) && key > entries[i].key; i++ {
+	for ; i < len(entries) && k > entries[i].k; i++ {
 	}
 
-	if i < len(entries) && key == entries[i].key {
-		return entries[i].value
+	if i < len(entries) && k == entries[i].k {
+		return entries[i].v
 	}
 
-	if node.leaf {
+	if n.leaf {
 		return nil
 	}
 
-	return bt.search(node.childs[i], key)
+	return bt.search(n.childs[i], k)
 }
 
-func (bt *BTree[K]) Search(key K) any {
+func (bt *BTree[K]) Search(k K) any {
 	bt.mutex.RLock()
 	defer bt.mutex.RUnlock()
 
-	return bt.search(bt.root, key)
+	return bt.search(bt.root, k)
 }
 
-func (bt *BTree[K]) splitChild(node *Node[K], i int) {
-	left := node.childs[i]
-	right := &Node[K]{leaf: left.leaf}
+func (bt *BTree[K]) splitChild(n *node[K], i int) {
+	left := n.childs[i]
+	right := &node[K]{leaf: left.leaf}
 
 	median := left.entries[bt.t-1]
 
@@ -81,45 +78,45 @@ func (bt *BTree[K]) splitChild(node *Node[K], i int) {
 		left.childs = left.childs[:bt.t]
 	}
 
-	node.entries = slices.Insert(
-		node.entries, i, median)
-	node.childs = slices.Insert(node.childs, i+1, right)
+	n.entries = slices.Insert(
+		n.entries, i, median)
+	n.childs = slices.Insert(n.childs, i+1, right)
 }
 
 func (bt *BTree[K]) splitRoot() {
-	bt.root = &Node[K]{
-		childs: []*Node[K]{bt.root},
+	bt.root = &node[K]{
+		childs: []*node[K]{bt.root},
 	}
 
 	bt.splitChild(bt.root, 0)
 }
 
 func (bt *BTree[K]) insertNonNull(
-	node *Node[K],
-	key K, value any,
+	n *node[K],
+	k K, v any,
 ) {
-	i := len(node.entries) - 1
-	for ; i >= 0 && key < node.entries[i].key; i-- {
+	i := len(n.entries) - 1
+	for ; i >= 0 && k < n.entries[i].k; i-- {
 	}
 	i++
 
-	if node.leaf {
-		node.entries = slices.Insert(
-			node.entries, i, &Entry[K]{key: key, value: value})
+	if n.leaf {
+		n.entries = slices.Insert(
+			n.entries, i, &entry[K]{k: k, v: v})
 
 		return
 	}
 
-	if bt.isFull(node.childs[i]) {
-		bt.splitChild(node, i)
-		if key > node.entries[i].key {
+	if bt.isFull(n.childs[i]) {
+		bt.splitChild(n, i)
+		if k > n.entries[i].k {
 			i++
 		}
 	}
-	bt.insertNonNull(node.childs[i], key, value)
+	bt.insertNonNull(n.childs[i], k, v)
 }
 
-func (bt *BTree[K]) Insert(key K, value any) {
+func (bt *BTree[K]) Insert(k K, v any) {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 
@@ -127,10 +124,10 @@ func (bt *BTree[K]) Insert(key K, value any) {
 		bt.splitRoot()
 	}
 
-	bt.insertNonNull(bt.root, key, value)
+	bt.insertNonNull(bt.root, k, v)
 }
 
-func (bt *BTree[K]) Delete(key K) any {
+func (bt *BTree[K]) Delete(k K) any {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 
@@ -138,7 +135,7 @@ func (bt *BTree[K]) Delete(key K) any {
 }
 
 func (bt *BTree[K]) String() string {
-	return fmt.Sprintf("&BTree[string]{root:%v}", bt.root)
+	return fmt.Sprintf("BTree{root: %v}", bt.root)
 }
 
 func New[K cmp.Ordered](
@@ -150,6 +147,6 @@ func New[K cmp.Ordered](
 
 	return &BTree[K]{
 		t:    minimumDegree,
-		root: &Node[K]{leaf: true},
+		root: &node[K]{leaf: true},
 	}
 }

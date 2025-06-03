@@ -11,38 +11,38 @@ var sampleKeys = strings.Split("F S Q K C L H T V W M R N", " ")
 func newSampleWithMinimumDegree2() *BTree[string] {
 	return &BTree[string]{
 		t: 2,
-		root: &Node[string]{
+		root: &node[string]{
 			leaf:    false,
-			entries: []*Entry[string]{{key: "Q", value: 2}},
-			childs: []*Node[string]{{
+			entries: []*entry[string]{{k: "Q", v: 2}},
+			childs: []*node[string]{{
 				leaf:    false,
-				entries: []*Entry[string]{{key: "F", value: 0}, {key: "K", value: 3}},
-				childs: []*Node[string]{{
+				entries: []*entry[string]{{k: "F", v: 0}, {k: "K", v: 3}},
+				childs: []*node[string]{{
 					leaf:    true,
-					entries: []*Entry[string]{{key: "C", value: 4}},
-					childs:  []*Node[string]{},
+					entries: []*entry[string]{{k: "C", v: 4}},
+					childs:  []*node[string]{},
 				}, {
 					leaf:    true,
-					entries: []*Entry[string]{{key: "H", value: 6}},
-					childs:  []*Node[string]{},
+					entries: []*entry[string]{{k: "H", v: 6}},
+					childs:  []*node[string]{},
 				}, {
 					leaf:    true,
-					entries: []*Entry[string]{{key: "L", value: 5}, {key: "M", value: 10}, {key: "N", value: 12}},
-					childs:  []*Node[string]{},
+					entries: []*entry[string]{{k: "L", v: 5}, {k: "M", v: 10}, {k: "N", v: 12}},
+					childs:  []*node[string]{},
 				}},
 			}, {
 				leaf:    false,
-				entries: []*Entry[string]{{key: "T", value: 7}},
-				childs: []*Node[string]{
+				entries: []*entry[string]{{k: "T", v: 7}},
+				childs: []*node[string]{
 					{
 						leaf:    true,
-						entries: []*Entry[string]{{key: "R", value: 11}, {key: "S", value: 1}},
-						childs:  []*Node[string]{},
+						entries: []*entry[string]{{k: "R", v: 11}, {k: "S", v: 1}},
+						childs:  []*node[string]{},
 					},
 					{
 						leaf:    true,
-						entries: []*Entry[string]{{key: "V", value: 8}, {key: "W", value: 9}},
-						childs:  []*Node[string]{},
+						entries: []*entry[string]{{k: "V", v: 8}, {k: "W", v: 9}},
+						childs:  []*node[string]{},
 					},
 				},
 			}},
@@ -77,8 +77,8 @@ func TestInsertion(t *testing.T) {
 
 	btSample := newSampleWithMinimumDegree2()
 
-	var check func(got *Node[string], expected *Node[string])
-	check = func(got *Node[string], expected *Node[string]) {
+	var check func(got *node[string], expected *node[string])
+	check = func(got *node[string], expected *node[string]) {
 		if got.leaf != expected.leaf {
 			t.Fatalf(
 				"expected leaf=%v: got=%v, expected=%v",
@@ -87,8 +87,8 @@ func TestInsertion(t *testing.T) {
 
 		if !slices.EqualFunc(
 			got.entries, expected.entries,
-			func(g *Entry[string], e *Entry[string]) bool {
-				return g.key == e.key && e.value == e.value
+			func(g *entry[string], e *entry[string]) bool {
+				return g.k == e.k && e.v == e.v
 			},
 		) {
 			t.Fatalf(
