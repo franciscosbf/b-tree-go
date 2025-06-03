@@ -71,16 +71,23 @@ func (bt *BTree[K]) splitChild(n *node[K], i int) {
 
 	median := left.entries[bt.t-1]
 
-	right.entries = slices.Clone(left.entries[bt.t:])
+	right.entries = append(
+		right.entries,
+		left.entries[bt.t:]...)
 	left.entries = left.entries[:bt.t-1]
 	if !left.leaf {
-		right.childs = slices.Clone(left.childs[bt.t:])
+		right.childs = append(
+			right.childs,
+			left.childs[bt.t:]...)
 		left.childs = left.childs[:bt.t]
 	}
 
-	n.entries = slices.Insert(
-		n.entries, i, median)
-	n.childs = slices.Insert(n.childs, i+1, right)
+	n.entries = append(
+		n.entries[:i],
+		append([]*entry[K]{median}, n.entries[i:]...)...)
+	n.childs = append(
+		n.childs[:i+1],
+		append([]*node[K]{right}, n.childs[i+1:]...)...)
 }
 
 func (bt *BTree[K]) splitRoot() {
