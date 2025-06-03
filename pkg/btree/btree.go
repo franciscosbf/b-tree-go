@@ -3,7 +3,6 @@ package btree
 import (
 	"cmp"
 	"fmt"
-	"slices"
 	"sync"
 )
 
@@ -108,8 +107,9 @@ func (bt *BTree[K]) insertNonNull(
 	i++
 
 	if n.leaf {
-		n.entries = slices.Insert(
-			n.entries, i, &entry[K]{k: k, v: v})
+		n.entries = append(
+			n.entries[:i],
+			append([]*entry[K]{{k: k, v: v}}, n.entries[i:]...)...)
 
 		return
 	}
