@@ -174,9 +174,10 @@ func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
 
 func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 	if len(n.childs[i].entries) == bt.t-1 {
-		j := min(i, len(n.entries)-1)
+		j := max(i-1, 0)
 		switch {
 		case i-1 > 0 && len(n.childs[i-1].entries) >= bt.t:
+			fmt.Println(n.entries, k, n.entries[j].k, j)
 			n.childs[i].entries = append(
 				[]*entry[K]{n.entries[j]},
 				n.childs[i].entries...)
