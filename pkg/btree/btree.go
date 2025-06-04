@@ -91,7 +91,7 @@ func (bt *BTree[K]) splitRoot() {
 	bt.splitChild(bt.root, 0)
 }
 
-func (bt *BTree[K]) findPosAtEnd(n *node[K], k K) int {
+func (bt *BTree[K]) findPost(n *node[K], k K) int {
 	i := len(n.entries) - 1
 	for ; i >= 0 && k < n.entries[i].k; i-- {
 	}
@@ -100,16 +100,8 @@ func (bt *BTree[K]) findPosAtEnd(n *node[K], k K) int {
 	return i
 }
 
-func (bt *BTree[K]) findPosAtStart(n *node[K], k K) int {
-	i := 0
-	for ; i < len(n.entries) && n.entries[i].k < k; i++ {
-	}
-
-	return i
-}
-
 func (bt *BTree[K]) insertNonNull(n *node[K], k K, v any) {
-	i := bt.findPosAtEnd(n, k)
+	i := bt.findPost(n, k)
 
 	if n.leaf {
 		n.entries = append(
@@ -238,14 +230,14 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 			}
 		}
 
-		i = bt.findPosAtEnd(n, k)
+		i = bt.findPost(n, k)
 	}
 
 	return bt.delete(n.childs[i], k)
 }
 
 func (bt *BTree[K]) deleteTraverse(n *node[K], k K) any {
-	i := bt.findPosAtStart(n, k)
+	i := bt.findPost(n, k)
 
 	if i < len(n.entries) && n.entries[i].k == k {
 		return bt.deleteAtInternalNode(n, i)
