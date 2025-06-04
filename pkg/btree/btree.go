@@ -116,70 +116,56 @@ func (bt *BTree[K]) insertNonNull(n *node[K], k K, v any) {
 	bt.insertNonNull(n.childs[i], k, v)
 }
 
-func (bt *BTree[K]) delete(n *node[K], k K) any {
-	// Case 1
-	if n.leaf {
-		for i, entry := range n.entries {
-			if k == entry.k {
-				v := entry.v
+func (bt *BTree[K]) deleteAtLeafNode(n *node[K], k K) any {
+	for i, entry := range n.entries {
+		if k == entry.k {
+			v := entry.v
 
-				n.entries = slices.Delete(n.entries, i, i+1)
-
-				return v
-			}
-		}
-
-		return nil
-	}
-
-	var i int
-
-	// Case 2
-	i = 0
-	for ; i < len(n.entries); i++ {
-		if k == n.entries[i].k {
-			break
-		}
-	}
-	if i < len(n.entries) {
-		v := n.entries[i].v
-
-		pc := n.childs[i]
-		fc := n.childs[i+1]
-		switch {
-		// Case 2a
-		case len(pc.entries) >= bt.t:
-			pe := pc.entries[len(pc.entries)-1]
-			bt.delete(pc, pe.k)
-			n.entries[i] = pe
-		// Case 2b
-		case len(fc.entries) >= bt.t-1 && len(fc.entries) >= bt.t:
-			fe := fc.entries[len(fc.entries)-1]
-			bt.delete(fc, fe.k)
-			n.entries[i] = fe
-		// Case 2c
-		default:
-			pc.entries = append(pc.entries, fc.entries...)
-			pc.childs = append(pc.childs, fc.childs...)
 			n.entries = slices.Delete(n.entries, i, i+1)
-			n.childs = slices.Delete(n.childs, i+1, i+1+1)
 
-			if len(n.entries) == 0 && bt.root == n {
-				bt.root = pc
-			}
+			return v
 		}
-
-		return v
 	}
 
-	// Case 3
-	i = len(n.entries) - 1
+	return nil
+}
+
+func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
+	v := n.entries[i].v
+
+	pc := n.childs[i]
+	fc := n.childs[i+1]
+	switch {
+	case len(pc.entries) >= bt.t:
+		pe := pc.entries[len(pc.entries)-1]
+		bt.delete(pc, pe.k)
+		n.entries[i] = pe
+	case len(pc.entries) == bt.t-1 && len(fc.entries) >= bt.t:
+		fe := fc.entries[len(fc.entries)-1]
+		bt.delete(fc, fe.k)
+		n.entries[i] = fe
+	default:
+		pc.entries = append(pc.entries, fc.entries...)
+		pc.childs = append(pc.childs, fc.childs...)
+		n.entries = slices.Delete(n.entries, i, i+1)
+		n.childs = slices.Delete(n.childs, i+1, i+1+1)
+
+		if len(n.entries) == 0 && bt.root == n {
+			bt.root = pc
+		}
+	}
+
+	return v
+}
+
+func (bt *BTree[K]) deleteBalance(n *node[K], k K) any {
+	i := len(n.entries) - 1
 	for ; i >= 0 && k < n.entries[i].k; i-- {
 	}
 	i++
+
 	if len(n.childs[i].entries) == bt.t-1 {
 		switch {
-		// Case 3a
 		case i-1 > 0 && len(n.childs[i-1].entries) >= bt.t:
 			n.childs[i].entries = append(
 				[]*entry[K]{n.entries[i-1]},
@@ -200,7 +186,6 @@ func (bt *BTree[K]) delete(n *node[K], k K) any {
 				n.childs[i].childs = append(n.childs[i].childs, n.childs[i+1].childs[0])
 				n.childs[i+1].childs = n.childs[i+1].childs[1:]
 			}
-		// Case 3b
 		case (i-1 > 0) && len(n.childs[i-1].entries) == bt.t-1 && (i+1 < len(n.childs)) && len(n.childs[i+1].entries) == bt.t-1:
 			pc := n.childs[i-1]
 			median := n.entries[i-1]
@@ -224,6 +209,24 @@ func (bt *BTree[K]) delete(n *node[K], k K) any {
 	}
 
 	return bt.delete(n.childs[i], k)
+}
+
+func (bt *BTree[K]) deleteTraverse(n *node[K], k K) any {
+	for i, entry := range n.entries {
+		if k == entry.k {
+			return bt.deleteAtInternalNode(n, i)
+		}
+	}
+
+	return bt.deleteBalance(n, k)
+}
+
+func (bt *BTree[K]) delete(n *node[K], k K) any {
+	if n.leaf {
+		return bt.deleteAtLeafNode(n, k)
+	}
+
+	return bt.deleteTraverse(n, k)
 }
 
 func (bt *BTree[K]) Search(k K) any {
