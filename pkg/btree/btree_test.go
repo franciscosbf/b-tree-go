@@ -424,6 +424,38 @@ func TestDeletion(t *testing.T) {
 					},
 				},
 			},
+			{
+				keyToRemove:   "L",
+				expectedValue: 12,
+				expectedBt: &BTree[string]{
+					t: 3,
+					root: &node[string]{
+						entries: []*entry[string]{{"E", 8}, {"Q", 17}, {"T", 15}, {"X", 16}},
+						childs: []*node[string]{
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"A", 5}, {"C", 2}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"J", 10}, {"K", 11}, {"N", 13}, {"P", 1}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"R", 18}, {"S", 19}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"U", 20}, {"V", 21}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
