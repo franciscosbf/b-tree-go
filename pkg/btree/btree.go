@@ -174,61 +174,70 @@ func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
 
 func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 	if len(n.childs[i].entries) == bt.t-1 {
-		j := max(i-1, 0)
-		switch {
-		case i-1 > 0 && len(n.childs[i-1].entries) >= bt.t:
-			fmt.Println(n.entries, k, n.entries[j].k, j)
+		ki := max(i-1, 0)
+		im1, ip1 := i-1, i+1
+
+		fmt.Println(n.entries, k, ki)
+
+		if im1 > 0 && len(n.childs[im1].entries) >= bt.t {
 			n.childs[i].entries = append(
-				[]*entry[K]{n.entries[j]},
+				[]*entry[K]{n.entries[ki]},
 				n.childs[i].entries...)
-			n.entries[j] = n.childs[i-1].entries[len(n.childs[i-1].entries)-1]
-			n.childs[i-1].entries = n.childs[i-1].entries[:len(n.childs[i-1].entries)-1]
-			if !n.childs[i-1].leaf {
+
+			n.entries[ki] = n.childs[im1].entries[len(n.childs[im1].entries)-1]
+			n.childs[im1].entries = n.childs[im1].entries[:len(n.childs[im1].entries)-1]
+
+			if !n.childs[im1].leaf {
 				n.childs[i].childs = append(
-					[]*node[K]{n.childs[i-1].childs[len(n.childs[i-1].childs)-1]},
-					n.childs[i+1].childs...)
-				n.childs[i-1].childs = n.childs[i-1].childs[:len(n.childs[i-1].childs)-1]
+					[]*node[K]{n.childs[im1].childs[len(n.childs[im1].childs)-1]},
+					n.childs[ip1].childs...)
+				n.childs[im1].childs = n.childs[im1].childs[:len(n.childs[im1].childs)-1]
 			}
-		case i+1 < len(n.childs) && len(n.childs[i+1].entries) >= bt.t:
-			n.childs[i].entries = append(n.childs[i].entries, n.entries[j])
-			n.entries[j] = n.childs[i+1].entries[0]
-			n.childs[i+1].entries = n.childs[i+1].entries[1:]
-			if !n.childs[i+1].leaf {
-				n.childs[i].childs = append(n.childs[i].childs, n.childs[i+1].childs[0])
-				n.childs[i+1].childs = n.childs[i+1].childs[1:]
+		} else if ip1 < len(n.childs) && len(n.childs[ip1].entries) >= bt.t {
+			n.childs[i].entries = append(n.childs[i].entries, n.entries[ki])
+
+			n.entries[ki] = n.childs[ip1].entries[0]
+			n.childs[ip1].entries = n.childs[ip1].entries[1:]
+
+			if !n.childs[ip1].leaf {
+				n.childs[i].childs = append(n.childs[i].childs, n.childs[ip1].childs[0])
+				n.childs[ip1].childs = n.childs[ip1].childs[1:]
 			}
-		case (i-1 > 0) && len(n.childs[i-1].entries) == bt.t-1:
-			pc := n.childs[i-1]
-			median := n.entries[j]
-			pc.entries = append(
-				pc.entries,
-				append([]*entry[K]{median}, n.childs[i].entries...)...)
-			pc.childs = append(pc.childs, n.childs[i].childs...)
-			n.entries = slices.Delete(n.entries, j, j+1)
-			n.childs = slices.Delete(n.childs, i, i+1)
+		} else {
+			var nn *node[K]
+
+			if im1 > 0 && len(n.childs[im1].entries) == bt.t-1 {
+				pc := n.childs[im1]
+				nn = pc
+				median := n.entries[ki]
+
+				pc.entries = append(
+					pc.entries,
+					append([]*entry[K]{median}, n.childs[i].entries...)...)
+				pc.childs = append(pc.childs, n.childs[i].childs...)
+
+				n.entries = slices.Delete(n.entries, ki, ki+1)
+				n.childs = slices.Delete(n.childs, i, i+1)
+			} else if ip1 < len(n.childs) && len(n.childs[ip1].entries) == bt.t-1 {
+				fc := n.childs[ip1]
+				nn = fc
+				median := n.entries[ki]
+
+				fc.entries = append(
+					append(n.childs[i].entries, median),
+					fc.entries...)
+				fc.childs = append(n.childs[i].childs, fc.childs...)
+
+				n.entries = slices.Delete(n.entries, ki, ki+1)
+				n.childs = slices.Delete(n.childs, i, i+1)
+			} else {
+				return bt.delete(n.childs[i], k)
+			}
 
 			if len(n.entries) == 0 && bt.root == n {
-				bt.root = pc
+				bt.root = nn
 				n = bt.root
-
 			}
-		case (i+1 < len(n.childs)) && len(n.childs[i+1].entries) == bt.t-1:
-			fc := n.childs[i+1]
-			median := n.entries[j]
-			fc.entries = append(
-				append(n.childs[i].entries, median),
-				fc.entries...)
-			fc.childs = append(n.childs[i].childs, fc.childs...)
-			n.entries = slices.Delete(n.entries, j, j+1)
-			n.childs = slices.Delete(n.childs, i, i+1)
-
-			if len(n.entries) == 0 && bt.root == n {
-				bt.root = fc
-				n = bt.root
-
-			}
-		default:
-			return bt.delete(n.childs[i], k)
 		}
 
 		i = bt.findPosAtEnd(n, k)
