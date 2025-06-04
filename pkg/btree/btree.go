@@ -144,15 +144,20 @@ func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
 	switch {
 	case len(pc.entries) >= bt.t:
 		pe := pc.entries[len(pc.entries)-1]
+
 		bt.delete(pc, pe.k)
+
 		n.entries[i] = pe
 	case len(pc.entries) == bt.t-1 && len(fc.entries) >= bt.t:
 		fe := fc.entries[len(fc.entries)-1]
+
 		bt.delete(fc, fe.k)
+
 		n.entries[i] = fe
 	default:
 		pc.entries = append(pc.entries, fc.entries...)
 		pc.childs = append(pc.childs, fc.childs...)
+
 		n.entries = slices.Delete(n.entries, i, i+1)
 		n.childs = slices.Delete(n.childs, i+1, i+1+1)
 
@@ -167,7 +172,10 @@ func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
 func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 	if len(n.childs[i].entries) == bt.t-1 {
 		ki := max(i-1, 0)
+
 		im1, ip1 := i-1, i+1
+
+		fmt.Println("before", n.entries, ki, k)
 
 		if im1 > 0 && len(n.childs[im1].entries) >= bt.t {
 			n.childs[i].entries = append(
@@ -184,6 +192,10 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 				n.childs[im1].childs = n.childs[im1].childs[:len(n.childs[im1].childs)-1]
 			}
 		} else if ip1 < len(n.childs) && len(n.childs[ip1].entries) >= bt.t {
+			if i >= 1 && i <= len(n.entries) {
+				ki++
+			}
+
 			n.childs[i].entries = append(n.childs[i].entries, n.entries[ki])
 
 			n.entries[ki] = n.childs[ip1].entries[0]
@@ -231,6 +243,8 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 		}
 
 		i = bt.findPos(n, k)
+
+		fmt.Println("after", n.entries, ki, k, i)
 	}
 
 	return bt.delete(n.childs[i], k)
@@ -283,9 +297,7 @@ func (bt *BTree[K]) String() string {
 	return fmt.Sprintf("BTree{root: %v}", bt.root)
 }
 
-func New[K cmp.Ordered](
-	minimumDegree int,
-) *BTree[K] {
+func New[K cmp.Ordered](minimumDegree int) *BTree[K] {
 	if minimumDegree < 2 {
 		panic("minimumDegree must be greater than 1")
 	}
