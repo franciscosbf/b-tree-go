@@ -111,14 +111,17 @@ func TestInsertion(t *testing.T) {
 }
 
 func TestDeletion(t *testing.T) {
-	samples := struct {
+	type outcome struct {
+		keyToRemove   string
+		expectedValue int
+		expectedBt    *BTree[string]
+	}
+	type sample struct {
 		bt       *BTree[string]
-		outcomes []struct {
-			keyToRemove   string
-			expectedValue int
-			expectedBt    *BTree[string]
-		}
-	}{
+		outcomes []*outcome
+	}
+
+	sample1 := sample{
 		bt: &BTree[string]{
 			t: 3,
 			root: &node[string]{
@@ -165,11 +168,7 @@ func TestDeletion(t *testing.T) {
 				},
 			},
 		},
-		outcomes: []struct {
-			keyToRemove   string
-			expectedValue int
-			expectedBt    *BTree[string]
-		}{
+		outcomes: []*outcome{
 			{
 				keyToRemove:   "F",
 				expectedValue: 9,
@@ -459,21 +458,55 @@ func TestDeletion(t *testing.T) {
 		},
 	}
 
-	for _, outcome := range samples.outcomes {
-		t.Logf("Testing deletion of key %v...", outcome.keyToRemove)
+	sample2 := sample{
+		bt: &BTree[string]{
+			t: 3,
+			root: &node[string]{
+				entries: []*entry[string]{{"L", 1}},
+				childs: []*node[string]{
+					{
+						leaf:    true,
+						entries: []*entry[string]{{"A", 2}, {"B", 3}},
+					},
+					{
+						leaf:    true,
+						entries: []*entry[string]{{"E", 4}, {"J", 5}},
+					},
+				},
+			},
+		},
+		outcomes: []*outcome{
+			{
+				keyToRemove:   "L",
+				expectedValue: 1,
+				expectedBt: &BTree[string]{
+					t: 3,
+					root: &node[string]{
+						leaf:    true,
+						entries: []*entry[string]{{"A", 2}, {"B", 3}, {"E", 4}, {"J", 5}},
+					},
+				},
+			},
+		},
+	}
 
-		value := samples.bt.Delete(outcome.keyToRemove)
+	for i, sample := range []*sample{&sample1, &sample2} {
+		for _, outcome := range sample.outcomes {
+			t.Logf("Testing deletion of key %v (sample %v)...", outcome.keyToRemove, i+1)
 
-		if value == nil {
-			t.Fatalf("didn't find key \"%v\"", outcome.keyToRemove)
+			value := sample.bt.Delete(outcome.keyToRemove)
+
+			if value == nil {
+				t.Fatalf("didn't find key \"%v\"", outcome.keyToRemove)
+			}
+
+			if value != outcome.expectedValue {
+				t.Fatalf(
+					"got different value for key \"%v\": got=%v expected=%v",
+					outcome.keyToRemove, value, outcome.expectedValue)
+			}
+
+			checkTree(t, sample.bt.root, outcome.expectedBt.root)
 		}
-
-		if value != outcome.expectedValue {
-			t.Fatalf(
-				"got different value for key \"%v\": got=%v expected=%v",
-				outcome.keyToRemove, value, outcome.expectedValue)
-		}
-
-		checkTree(t, samples.bt.root, outcome.expectedBt.root)
 	}
 }
