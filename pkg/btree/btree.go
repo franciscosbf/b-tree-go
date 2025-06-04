@@ -299,7 +299,7 @@ func (bt *BTree[K]) String() string {
 
 func New[K cmp.Ordered](minimumDegree int) *BTree[K] {
 	if minimumDegree < 2 {
-		panic("minimumDegree must be greater than 1")
+		panic("minimumDegree must be at least 2")
 	}
 
 	return &BTree[K]{
