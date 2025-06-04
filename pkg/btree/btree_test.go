@@ -442,8 +442,6 @@ func TestDeletion(t *testing.T) {
 				outcome.keyToRemove, value, outcome.expectedValue)
 		}
 
-		// fmt.Println(samples.bt)
-
 		checkTree(t, samples.bt.root, outcome.expectedBt.root)
 	}
 }

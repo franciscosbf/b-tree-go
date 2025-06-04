@@ -175,7 +175,7 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 
 		im1, ip1 := i-1, i+1
 
-		fmt.Println("before", n.entries, ki, k)
+		// fmt.Println("before", n.entries, ki, k)
 
 		if im1 > 0 && len(n.childs[im1].entries) >= bt.t {
 			n.childs[i].entries = append(
@@ -244,7 +244,7 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 
 		i = bt.findPos(n, k)
 
-		fmt.Println("after", n.entries, ki, k, i)
+		// fmt.Println("after", n.entries, ki, k, i)
 	}
 
 	return bt.delete(n.childs[i], k)
