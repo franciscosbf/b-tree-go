@@ -91,10 +91,16 @@ func (bt *BTree[K]) splitRoot() {
 	bt.splitChild(bt.root, 0)
 }
 
-func (bt *BTree[K]) findPos(n *node[K], k K) int {
+func (bt *BTree[K]) findRawPos(n *node[K], k K) int {
 	i := len(n.entries) - 1
 	for ; i >= 0 && k < n.entries[i].k; i-- {
 	}
+
+	return i
+}
+
+func (bt *BTree[K]) findPos(n *node[K], k K) int {
+	i := bt.findRawPos(n, k)
 	i++
 
 	return i
@@ -175,13 +181,10 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 
 		im1, ip1 := i-1, i+1
 
-		// fmt.Println("before", n.entries, ki, k)
-
 		if im1 > 0 && len(n.childs[im1].entries) >= bt.t {
 			n.childs[i].entries = append(
 				[]*entry[K]{n.entries[ki]},
 				n.childs[i].entries...)
-
 			n.entries[ki] = n.childs[im1].entries[len(n.childs[im1].entries)-1]
 			n.childs[im1].entries = n.childs[im1].entries[:len(n.childs[im1].entries)-1]
 
@@ -197,7 +200,6 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 			}
 
 			n.childs[i].entries = append(n.childs[i].entries, n.entries[ki])
-
 			n.entries[ki] = n.childs[ip1].entries[0]
 			n.childs[ip1].entries = n.childs[ip1].entries[1:]
 
@@ -243,21 +245,19 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 		}
 
 		i = bt.findPos(n, k)
-
-		// fmt.Println("after", n.entries, ki, k, i)
 	}
 
 	return bt.delete(n.childs[i], k)
 }
 
 func (bt *BTree[K]) deleteTraverse(n *node[K], k K) any {
-	i := bt.findPos(n, k)
+	i := bt.findRawPos(n, k)
 
-	if i < len(n.entries) && n.entries[i].k == k {
+	if i >= 0 && n.entries[i].k == k {
 		return bt.deleteAtInternalNode(n, i)
 	}
 
-	return bt.deleteBalance(n, i, k)
+	return bt.deleteBalance(n, i+1, k)
 }
 
 func (bt *BTree[K]) delete(n *node[K], k K) any {
