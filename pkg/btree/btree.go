@@ -3,6 +3,7 @@ package btree
 import (
 	"cmp"
 	"fmt"
+	"slices"
 	"sync"
 )
 
@@ -57,13 +58,6 @@ func (bt *BTree[K]) search(n *node[K], k K) any {
 	return bt.search(n.childs[i], k)
 }
 
-func (bt *BTree[K]) Search(k K) any {
-	bt.mutex.RLock()
-	defer bt.mutex.RUnlock()
-
-	return bt.search(bt.root, k)
-}
-
 func (bt *BTree[K]) splitChild(n *node[K], i int) {
 	left := n.childs[i]
 	right := &node[K]{leaf: left.leaf}
@@ -97,10 +91,7 @@ func (bt *BTree[K]) splitRoot() {
 	bt.splitChild(bt.root, 0)
 }
 
-func (bt *BTree[K]) insertNonNull(
-	n *node[K],
-	k K, v any,
-) {
+func (bt *BTree[K]) insertNonNull(n *node[K], k K, v any) {
 	i := len(n.entries) - 1
 	for ; i >= 0 && k < n.entries[i].k; i-- {
 	}
@@ -116,11 +107,130 @@ func (bt *BTree[K]) insertNonNull(
 
 	if bt.isFull(n.childs[i]) {
 		bt.splitChild(n, i)
+
 		if k > n.entries[i].k {
 			i++
 		}
 	}
+
 	bt.insertNonNull(n.childs[i], k, v)
+}
+
+func (bt *BTree[K]) delete(n *node[K], k K) any {
+	// Case 1
+	if n.leaf {
+		for i, entry := range n.entries {
+			if k == entry.k {
+				v := entry.v
+
+				n.entries = slices.Delete(n.entries, i, i+1)
+
+				return v
+			}
+		}
+
+		return nil
+	}
+
+	var i int
+
+	// Case 2
+	i = 0
+	for ; i < len(n.entries); i++ {
+		if k == n.entries[i].k {
+			break
+		}
+	}
+	if i < len(n.entries) {
+		v := n.entries[i].v
+
+		pc := n.childs[i]
+		fc := n.childs[i+1]
+		switch {
+		// Case 2a
+		case len(pc.entries) >= bt.t:
+			pe := pc.entries[len(pc.entries)-1]
+			bt.delete(pc, pe.k)
+			n.entries[i] = pe
+		// Case 2b
+		case len(fc.entries) >= bt.t-1 && len(fc.entries) >= bt.t:
+			fe := fc.entries[len(fc.entries)-1]
+			bt.delete(fc, fe.k)
+			n.entries[i] = fe
+		// Case 2c
+		default:
+			pc.entries = append(pc.entries, fc.entries...)
+			pc.childs = append(pc.childs, fc.childs...)
+			n.entries = slices.Delete(n.entries, i, i+1)
+			n.childs = slices.Delete(n.childs, i+1, i+1+1)
+
+			if len(n.entries) == 0 && bt.root == n {
+				bt.root = pc
+			}
+		}
+
+		return v
+	}
+
+	// Case 3
+	i = len(n.entries) - 1
+	for ; i >= 0 && k < n.entries[i].k; i-- {
+	}
+	i++
+	if len(n.childs[i].entries) == bt.t-1 {
+		switch {
+		// Case 3a
+		case i-1 > 0 && len(n.childs[i-1].entries) >= bt.t:
+			n.childs[i].entries = append(
+				[]*entry[K]{n.entries[i-1]},
+				n.childs[i].entries...)
+			n.entries[i] = n.childs[i-1].entries[len(n.childs[i-1].entries)-1]
+			n.childs[i-1].entries = n.childs[i-1].entries[:len(n.childs[i-1].entries)-1]
+			if !n.childs[i-1].leaf {
+				n.childs[i].childs = append(
+					[]*node[K]{n.childs[i-1].childs[len(n.childs[i-1].childs)-1]},
+					n.childs[i+1].childs...)
+				n.childs[i-1].childs = n.childs[i-1].childs[:len(n.childs[i-1].childs)-1]
+			}
+		case i+1 < len(n.childs) && len(n.childs[i+1].entries) >= bt.t:
+			n.childs[i].entries = append(n.childs[i].entries, n.entries[i])
+			n.entries[i] = n.childs[i+1].entries[0]
+			n.childs[i+1].entries = n.childs[i+1].entries[1:]
+			if !n.childs[i+1].leaf {
+				n.childs[i].childs = append(n.childs[i].childs, n.childs[i+1].childs[0])
+				n.childs[i+1].childs = n.childs[i+1].childs[1:]
+			}
+		// Case 3b
+		case (i-1 > 0) && len(n.childs[i-1].entries) == bt.t-1 && (i+1 < len(n.childs)) && len(n.childs[i+1].entries) == bt.t-1:
+			pc := n.childs[i-1]
+			median := n.entries[i-1]
+			pc.entries = append(
+				pc.entries,
+				append([]*entry[K]{median}, n.childs[i].entries...)...)
+			pc.childs = append(pc.childs, n.childs[i].childs...)
+			n.entries = slices.Delete(n.entries, i-1, i-1+1)
+			n.childs = slices.Delete(n.childs, i, i+1)
+
+			if len(n.entries) == 0 && bt.root == n {
+				bt.root = pc
+				n = bt.root
+			}
+		}
+
+		i = len(n.entries) - 1
+		for ; i >= 0 && k < n.entries[i].k; i-- {
+		}
+		i++
+	}
+
+	return bt.delete(n.childs[i], k)
+}
+
+func (bt *BTree[K]) Search(k K) any {
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+
+	return bt.search(bt.root, k)
 }
 
 func (bt *BTree[K]) Insert(k K, v any) {
@@ -138,7 +248,7 @@ func (bt *BTree[K]) Delete(k K) any {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 
-	return nil // TODO: implement
+	return bt.delete(bt.root, k)
 }
 
 func (bt *BTree[K]) String() string {
