@@ -91,11 +91,25 @@ func (bt *BTree[K]) splitRoot() {
 	bt.splitChild(bt.root, 0)
 }
 
-func (bt *BTree[K]) insertNonNull(n *node[K], k K, v any) {
+func (bt *BTree[K]) findPosAtEnd(n *node[K], k K) int {
 	i := len(n.entries) - 1
 	for ; i >= 0 && k < n.entries[i].k; i-- {
 	}
 	i++
+
+	return i
+}
+
+func (bt *BTree[K]) findPosAtStart(n *node[K], k K) int {
+	i := 0
+	for ; i < len(n.entries) && n.entries[i].k < k; i++ {
+	}
+
+	return i
+}
+
+func (bt *BTree[K]) insertNonNull(n *node[K], k K, v any) {
+	i := bt.findPosAtEnd(n, k)
 
 	if n.leaf {
 		n.entries = append(
@@ -158,19 +172,15 @@ func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
 	return v
 }
 
-func (bt *BTree[K]) deleteBalance(n *node[K], k K) any {
-	i := len(n.entries) - 1
-	for ; i >= 0 && k < n.entries[i].k; i-- {
-	}
-	i++
-
+func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 	if len(n.childs[i].entries) == bt.t-1 {
+		j := min(i, len(n.entries)-1)
 		switch {
 		case i-1 > 0 && len(n.childs[i-1].entries) >= bt.t:
 			n.childs[i].entries = append(
-				[]*entry[K]{n.entries[i-1]},
+				[]*entry[K]{n.entries[j]},
 				n.childs[i].entries...)
-			n.entries[i] = n.childs[i-1].entries[len(n.childs[i-1].entries)-1]
+			n.entries[j] = n.childs[i-1].entries[len(n.childs[i-1].entries)-1]
 			n.childs[i-1].entries = n.childs[i-1].entries[:len(n.childs[i-1].entries)-1]
 			if !n.childs[i-1].leaf {
 				n.childs[i].childs = append(
@@ -179,46 +189,61 @@ func (bt *BTree[K]) deleteBalance(n *node[K], k K) any {
 				n.childs[i-1].childs = n.childs[i-1].childs[:len(n.childs[i-1].childs)-1]
 			}
 		case i+1 < len(n.childs) && len(n.childs[i+1].entries) >= bt.t:
-			n.childs[i].entries = append(n.childs[i].entries, n.entries[i])
-			n.entries[i] = n.childs[i+1].entries[0]
+			n.childs[i].entries = append(n.childs[i].entries, n.entries[j])
+			n.entries[j] = n.childs[i+1].entries[0]
 			n.childs[i+1].entries = n.childs[i+1].entries[1:]
 			if !n.childs[i+1].leaf {
 				n.childs[i].childs = append(n.childs[i].childs, n.childs[i+1].childs[0])
 				n.childs[i+1].childs = n.childs[i+1].childs[1:]
 			}
-		case (i-1 > 0) && len(n.childs[i-1].entries) == bt.t-1 && (i+1 < len(n.childs)) && len(n.childs[i+1].entries) == bt.t-1:
+		case (i-1 > 0) && len(n.childs[i-1].entries) == bt.t-1:
 			pc := n.childs[i-1]
-			median := n.entries[i-1]
+			median := n.entries[j]
 			pc.entries = append(
 				pc.entries,
 				append([]*entry[K]{median}, n.childs[i].entries...)...)
 			pc.childs = append(pc.childs, n.childs[i].childs...)
-			n.entries = slices.Delete(n.entries, i-1, i-1+1)
+			n.entries = slices.Delete(n.entries, j, j+1)
 			n.childs = slices.Delete(n.childs, i, i+1)
 
 			if len(n.entries) == 0 && bt.root == n {
 				bt.root = pc
 				n = bt.root
+
 			}
+		case (i+1 < len(n.childs)) && len(n.childs[i+1].entries) == bt.t-1:
+			fc := n.childs[i+1]
+			median := n.entries[j]
+			fc.entries = append(
+				append(n.childs[i].entries, median),
+				fc.entries...)
+			fc.childs = append(n.childs[i].childs, fc.childs...)
+			n.entries = slices.Delete(n.entries, j, j+1)
+			n.childs = slices.Delete(n.childs, i, i+1)
+
+			if len(n.entries) == 0 && bt.root == n {
+				bt.root = fc
+				n = bt.root
+
+			}
+		default:
+			return bt.delete(n.childs[i], k)
 		}
 
-		i = len(n.entries) - 1
-		for ; i >= 0 && k < n.entries[i].k; i-- {
-		}
-		i++
+		i = bt.findPosAtEnd(n, k)
 	}
 
 	return bt.delete(n.childs[i], k)
 }
 
 func (bt *BTree[K]) deleteTraverse(n *node[K], k K) any {
-	for i, entry := range n.entries {
-		if k == entry.k {
-			return bt.deleteAtInternalNode(n, i)
-		}
+	i := bt.findPosAtStart(n, k)
+
+	if i < len(n.entries) && n.entries[i].k == k {
+		return bt.deleteAtInternalNode(n, i)
 	}
 
-	return bt.deleteBalance(n, k)
+	return bt.deleteBalance(n, i, k)
 }
 
 func (bt *BTree[K]) delete(n *node[K], k K) any {
