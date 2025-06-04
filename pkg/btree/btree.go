@@ -177,8 +177,6 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 		ki := max(i-1, 0)
 		im1, ip1 := i-1, i+1
 
-		fmt.Println(n.entries, k, ki)
-
 		if im1 > 0 && len(n.childs[im1].entries) >= bt.t {
 			n.childs[i].entries = append(
 				[]*entry[K]{n.entries[ki]},
