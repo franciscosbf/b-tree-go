@@ -490,7 +490,74 @@ func TestDeletion(t *testing.T) {
 		},
 	}
 
-	for i, sample := range []*sample{&sample1, &sample2} {
+	sample3 := sample{
+		bt: &BTree[string]{
+			t: 3,
+			root: &node[string]{
+				leaf:    true,
+				entries: []*entry[string]{{"W", 1}},
+			},
+		},
+		outcomes: []*outcome{
+			{
+				keyToRemove:   "W",
+				expectedValue: 1,
+				expectedBt: &BTree[string]{
+					t: 3,
+					root: &node[string]{
+						leaf: true,
+					},
+				},
+			},
+		},
+	}
+
+	sample4 := sample{
+		bt: &BTree[string]{
+			t: 2,
+			root: &node[string]{
+				entries: []*entry[string]{{"B", 1}, {"D", 2}},
+				childs: []*node[string]{
+					{
+						leaf:    true,
+						entries: []*entry[string]{{"A", 3}},
+					},
+					{
+						leaf:    true,
+						entries: []*entry[string]{{"C", 4}},
+					},
+					{
+						leaf:    true,
+						entries: []*entry[string]{{"E", 5}},
+					},
+				},
+			},
+		},
+		outcomes: []*outcome{
+			{
+				keyToRemove:   "C",
+				expectedValue: 4,
+				expectedBt: &BTree[string]{
+					t: 2,
+					root: &node[string]{
+						entries: []*entry[string]{{"D", 2}},
+						childs: []*node[string]{
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"A", 3}, {"B", 1}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"E", 5}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for i, sample := range []sample{sample1, sample2, sample3, sample4} {
 		for _, outcome := range sample.outcomes {
 			t.Logf("Testing deletion of key %v (sample %v)...", outcome.keyToRemove, i+1)
 

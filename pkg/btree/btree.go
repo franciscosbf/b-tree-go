@@ -181,7 +181,7 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 
 		im1, ip1 := i-1, i+1
 
-		if im1 > 0 && len(n.childs[im1].entries) >= bt.t {
+		if im1 >= 0 && len(n.childs[im1].entries) >= bt.t {
 			n.childs[i].entries = append(
 				[]*entry[K]{n.entries[ki]},
 				n.childs[i].entries...)
@@ -210,7 +210,7 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 		} else {
 			var nn *node[K]
 
-			if im1 > 0 && len(n.childs[im1].entries) == bt.t-1 {
+			if im1 >= 0 && len(n.childs[im1].entries) == bt.t-1 {
 				pc := n.childs[im1]
 				nn = pc
 				median := n.entries[ki]
