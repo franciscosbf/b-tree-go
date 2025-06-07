@@ -39,11 +39,11 @@ type tree[K cmp.Ordered] struct {
 
 type BTree[K cmp.Ordered] struct {
 	mutex sync.RWMutex
-	tree[K]
+	tree  tree[K]
 }
 
 func (bt *BTree[K]) isFull(n *node[K]) bool {
-	return len(n.Entries) == (2*bt.T)-1
+	return len(n.Entries) == (2*bt.tree.T)-1
 }
 
 func (bt *BTree[K]) search(n *node[K], k K) any {
@@ -68,17 +68,17 @@ func (bt *BTree[K]) splitChild(n *node[K], i int) {
 	left := n.Childs[i]
 	right := &node[K]{Leaf: left.Leaf}
 
-	median := left.Entries[bt.T-1]
+	median := left.Entries[bt.tree.T-1]
 
 	right.Entries = append(
 		right.Entries,
-		left.Entries[bt.T:]...)
-	left.Entries = left.Entries[:bt.T-1]
+		left.Entries[bt.tree.T:]...)
+	left.Entries = left.Entries[:bt.tree.T-1]
 	if !left.Leaf {
 		right.Childs = append(
 			right.Childs,
-			left.Childs[bt.T:]...)
-		left.Childs = left.Childs[:bt.T]
+			left.Childs[bt.tree.T:]...)
+		left.Childs = left.Childs[:bt.tree.T]
 	}
 
 	n.Entries = append(
@@ -90,11 +90,11 @@ func (bt *BTree[K]) splitChild(n *node[K], i int) {
 }
 
 func (bt *BTree[K]) splitRoot() {
-	bt.Root = &node[K]{
-		Childs: []*node[K]{bt.Root},
+	bt.tree.Root = &node[K]{
+		Childs: []*node[K]{bt.tree.Root},
 	}
 
-	bt.splitChild(bt.Root, 0)
+	bt.splitChild(bt.tree.Root, 0)
 }
 
 func (bt *BTree[K]) findRawPos(n *node[K], k K) int {
@@ -162,13 +162,13 @@ func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
 	pc := n.Childs[i]
 	fc := n.Childs[i+1]
 	switch {
-	case len(pc.Entries) >= bt.T:
+	case len(pc.Entries) >= bt.tree.T:
 		pe := pc.Entries[len(pc.Entries)-1]
 
 		bt.delete(pc, pe.K)
 
 		n.Entries[i] = pe
-	case len(pc.Entries) == bt.T-1 && len(fc.Entries) >= bt.T:
+	case len(pc.Entries) == bt.tree.T-1 && len(fc.Entries) >= bt.tree.T:
 		fe := fc.Entries[len(fc.Entries)-1]
 
 		bt.delete(fc, fe.K)
@@ -181,8 +181,8 @@ func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
 		n.Entries = slices.Delete(n.Entries, i, i+1)
 		n.Childs = slices.Delete(n.Childs, i+1, i+1+1)
 
-		if len(n.Entries) == 0 && bt.Root == n {
-			bt.Root = pc
+		if len(n.Entries) == 0 && bt.tree.Root == n {
+			bt.tree.Root = pc
 		}
 	}
 
@@ -190,12 +190,12 @@ func (bt *BTree[K]) deleteAtInternalNode(n *node[K], i int) any {
 }
 
 func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
-	if len(n.Childs[i].Entries) == bt.T-1 {
+	if len(n.Childs[i].Entries) == bt.tree.T-1 {
 		ki := max(i-1, 0)
 
 		im1, ip1 := i-1, i+1
 
-		if im1 >= 0 && len(n.Childs[im1].Entries) >= bt.T {
+		if im1 >= 0 && len(n.Childs[im1].Entries) >= bt.tree.T {
 			n.Childs[i].Entries = append(
 				[]*entry[K]{n.Entries[ki]},
 				n.Childs[i].Entries...)
@@ -208,7 +208,7 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 					n.Childs[ip1].Childs...)
 				n.Childs[im1].Childs = n.Childs[im1].Childs[:len(n.Childs[im1].Childs)-1]
 			}
-		} else if ip1 < len(n.Childs) && len(n.Childs[ip1].Entries) >= bt.T {
+		} else if ip1 < len(n.Childs) && len(n.Childs[ip1].Entries) >= bt.tree.T {
 			if i >= 1 && i <= len(n.Entries) {
 				ki++
 			}
@@ -224,7 +224,7 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 		} else {
 			var nn *node[K]
 
-			if im1 >= 0 && len(n.Childs[im1].Entries) == bt.T-1 {
+			if im1 >= 0 && len(n.Childs[im1].Entries) == bt.tree.T-1 {
 				pc := n.Childs[im1]
 				nn = pc
 				median := n.Entries[ki]
@@ -236,7 +236,7 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 
 				n.Entries = slices.Delete(n.Entries, ki, ki+1)
 				n.Childs = slices.Delete(n.Childs, i, i+1)
-			} else if ip1 < len(n.Childs) && len(n.Childs[ip1].Entries) == bt.T-1 {
+			} else if ip1 < len(n.Childs) && len(n.Childs[ip1].Entries) == bt.tree.T-1 {
 				fc := n.Childs[ip1]
 				nn = fc
 				median := n.Entries[ki]
@@ -252,9 +252,9 @@ func (bt *BTree[K]) deleteBalance(n *node[K], i int, k K) any {
 				return bt.delete(n.Childs[i], k)
 			}
 
-			if len(n.Entries) == 0 && bt.Root == n {
-				bt.Root = nn
-				n = bt.Root
+			if len(n.Entries) == 0 && bt.tree.Root == n {
+				bt.tree.Root = nn
+				n = bt.tree.Root
 			}
 		}
 
@@ -286,25 +286,25 @@ func (bt *BTree[K]) Search(k K) any {
 	bt.mutex.RLock()
 	defer bt.mutex.RUnlock()
 
-	return bt.search(bt.Root, k)
+	return bt.search(bt.tree.Root, k)
 }
 
 func (bt *BTree[K]) Insert(k K, v any) {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 
-	if bt.isFull(bt.Root) {
+	if bt.isFull(bt.tree.Root) {
 		bt.splitRoot()
 	}
 
-	bt.insertNonNull(bt.Root, k, v)
+	bt.insertNonNull(bt.tree.Root, k, v)
 }
 
 func (bt *BTree[K]) Delete(k K) any {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 
-	return bt.delete(bt.Root, k)
+	return bt.delete(bt.tree.Root, k)
 }
 
 func EncodeGob[K cmp.Ordered](bt *BTree[K]) []byte {
@@ -331,7 +331,7 @@ func DecodeGob[K cmp.Ordered](raw []byte) (*BTree[K], error) {
 }
 
 func (bt *BTree[K]) String() string {
-	return fmt.Sprintf("BTree{Root: %v}", bt.Root)
+	return fmt.Sprintf("BTree{Root: %v}", bt.tree.Root)
 }
 
 func New[K cmp.Ordered](minimumDegree int) *BTree[K] {

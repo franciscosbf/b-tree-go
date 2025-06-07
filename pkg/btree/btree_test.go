@@ -138,7 +138,7 @@ func TestInsertion(t *testing.T) {
 		bt.Insert(key, i)
 	}
 
-	checkTree(t, bt.Root, expectedBt.Root)
+	checkTree(t, bt.tree.Root, expectedBt.tree.Root)
 }
 
 func TestDuplicatedInsertion(t *testing.T) {
@@ -239,7 +239,7 @@ func TestDuplicatedInsertion(t *testing.T) {
 
 		ts.bt.Insert(tc.keyToInsert, tc.valueToInsert)
 
-		checkTree(t, ts.bt.Root, tc.expectedBt.Root)
+		checkTree(t, ts.bt.tree.Root, tc.expectedBt.tree.Root)
 	}
 }
 
@@ -735,7 +735,7 @@ func TestDeletion(t *testing.T) {
 					tc.keyToRemove, value, tc.expectedValue)
 			}
 
-			checkTree(t, ts.bt.Root, tc.expectedBt.Root)
+			checkTree(t, ts.bt.tree.Root, tc.expectedBt.tree.Root)
 		}
 	}
 }
