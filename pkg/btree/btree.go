@@ -307,17 +307,15 @@ func (bt *BTree[K]) Delete(k K) any {
 	return bt.delete(bt.Root, k)
 }
 
-func (bt *BTree[K]) EncodeGob() ([]byte, error) {
+func EncodeGob[K cmp.Ordered](bt *BTree[K]) []byte {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 
 	var buf bytes.Buffer
 
-	if err := gob.NewEncoder(&buf).Encode(bt.tree); err != nil {
-		return nil, err
-	}
+	gob.NewEncoder(&buf).Encode(bt.tree)
 
-	return buf.Bytes(), nil
+	return buf.Bytes()
 }
 
 func DecodeGob[K cmp.Ordered](raw []byte) (*BTree[K], error) {
