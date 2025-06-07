@@ -6,67 +6,69 @@ import (
 )
 
 func checkTree(t *testing.T, got *node[string], expected *node[string]) {
-	if got.leaf != expected.leaf {
+	if got.Leaf != expected.Leaf {
 		t.Fatalf(
 			"expected leaf=%v: got=%v, expected=%v",
-			expected.leaf, got, expected)
+			expected.Leaf, got, expected)
 	}
 
 	if !slices.EqualFunc(
-		got.entries, expected.entries,
+		got.Entries, expected.Entries,
 		func(g *entry[string], e *entry[string]) bool {
-			return g.k == e.k && e.v == e.v
+			return g.K == e.K && e.V == e.V
 		},
 	) {
 		t.Fatalf(
 			"entries aren't equal: got=%v, expected=%v",
-			got.entries, expected.entries)
+			got.Entries, expected.Entries)
 	}
 
-	if len(got.childs) != len(expected.childs) {
+	if len(got.Childs) != len(expected.Childs) {
 		t.Fatalf(
 			"different number of childs: got=%v, expected=%v",
-			got.childs, expected.childs)
+			got.Childs, expected.Childs)
 	}
 
-	for i, expectedChild := range expected.childs {
-		checkTree(t, got.childs[i], expectedChild)
+	for i, expectedChild := range expected.Childs {
+		checkTree(t, got.Childs[i], expectedChild)
 	}
 }
 
 func TestSearch(t *testing.T) {
 	bt := &BTree[string]{
-		t: 2,
-		root: &node[string]{
-			entries: []*entry[string]{{k: "Q", v: 2}},
-			childs: []*node[string]{
-				{
-					entries: []*entry[string]{{k: "F", v: 0}, {k: "K", v: 3}},
-					childs: []*node[string]{{
-						leaf:    true,
-						entries: []*entry[string]{{k: "C", v: 4}},
-						childs:  []*node[string]{},
+		tree: tree[string]{
+			T: 2,
+			Root: &node[string]{
+				Entries: []*entry[string]{{K: "Q", V: 2}},
+				Childs: []*node[string]{
+					{
+						Entries: []*entry[string]{{K: "F", V: 0}, {K: "K", V: 3}},
+						Childs: []*node[string]{{
+							Leaf:    true,
+							Entries: []*entry[string]{{K: "C", V: 4}},
+							Childs:  []*node[string]{},
+						}, {
+							Leaf:    true,
+							Entries: []*entry[string]{{K: "H", V: 6}},
+							Childs:  []*node[string]{},
+						}, {
+							Leaf:    true,
+							Entries: []*entry[string]{{K: "L", V: 5}, {K: "M", V: 10}, {K: "N", V: 12}},
+							Childs:  []*node[string]{},
+						}},
 					}, {
-						leaf:    true,
-						entries: []*entry[string]{{k: "H", v: 6}},
-						childs:  []*node[string]{},
-					}, {
-						leaf:    true,
-						entries: []*entry[string]{{k: "L", v: 5}, {k: "M", v: 10}, {k: "N", v: 12}},
-						childs:  []*node[string]{},
-					}},
-				}, {
-					entries: []*entry[string]{{k: "T", v: 7}},
-					childs: []*node[string]{
-						{
-							leaf:    true,
-							entries: []*entry[string]{{k: "R", v: 11}, {k: "S", v: 1}},
-							childs:  []*node[string]{},
-						},
-						{
-							leaf:    true,
-							entries: []*entry[string]{{k: "V", v: 8}, {k: "W", v: 9}},
-							childs:  []*node[string]{},
+						Entries: []*entry[string]{{K: "T", V: 7}},
+						Childs: []*node[string]{
+							{
+								Leaf:    true,
+								Entries: []*entry[string]{{K: "R", V: 11}, {K: "S", V: 1}},
+								Childs:  []*node[string]{},
+							},
+							{
+								Leaf:    true,
+								Entries: []*entry[string]{{K: "V", V: 8}, {K: "W", V: 9}},
+								Childs:  []*node[string]{},
+							},
 						},
 					},
 				},
@@ -92,37 +94,39 @@ func TestSearch(t *testing.T) {
 func TestInsertion(t *testing.T) {
 	bt := New[string](2)
 	expectedBt := &BTree[string]{
-		t: 2,
-		root: &node[string]{
-			entries: []*entry[string]{{k: "Q", v: 2}},
-			childs: []*node[string]{
-				{
-					entries: []*entry[string]{{k: "F", v: 0}, {k: "K", v: 3}},
-					childs: []*node[string]{{
-						leaf:    true,
-						entries: []*entry[string]{{k: "C", v: 4}},
-						childs:  []*node[string]{},
+		tree: tree[string]{
+			T: 2,
+			Root: &node[string]{
+				Entries: []*entry[string]{{K: "Q", V: 2}},
+				Childs: []*node[string]{
+					{
+						Entries: []*entry[string]{{K: "F", V: 0}, {K: "K", V: 3}},
+						Childs: []*node[string]{{
+							Leaf:    true,
+							Entries: []*entry[string]{{K: "C", V: 4}},
+							Childs:  []*node[string]{},
+						}, {
+							Leaf:    true,
+							Entries: []*entry[string]{{K: "H", V: 6}},
+							Childs:  []*node[string]{},
+						}, {
+							Leaf:    true,
+							Entries: []*entry[string]{{K: "L", V: 5}, {K: "M", V: 10}, {K: "N", V: 12}},
+							Childs:  []*node[string]{},
+						}},
 					}, {
-						leaf:    true,
-						entries: []*entry[string]{{k: "H", v: 6}},
-						childs:  []*node[string]{},
-					}, {
-						leaf:    true,
-						entries: []*entry[string]{{k: "L", v: 5}, {k: "M", v: 10}, {k: "N", v: 12}},
-						childs:  []*node[string]{},
-					}},
-				}, {
-					entries: []*entry[string]{{k: "T", v: 7}},
-					childs: []*node[string]{
-						{
-							leaf:    true,
-							entries: []*entry[string]{{k: "R", v: 11}, {k: "S", v: 1}},
-							childs:  []*node[string]{},
-						},
-						{
-							leaf:    true,
-							entries: []*entry[string]{{k: "V", v: 8}, {k: "W", v: 9}},
-							childs:  []*node[string]{},
+						Entries: []*entry[string]{{K: "T", V: 7}},
+						Childs: []*node[string]{
+							{
+								Leaf:    true,
+								Entries: []*entry[string]{{K: "R", V: 11}, {K: "S", V: 1}},
+								Childs:  []*node[string]{},
+							},
+							{
+								Leaf:    true,
+								Entries: []*entry[string]{{K: "V", V: 8}, {K: "W", V: 9}},
+								Childs:  []*node[string]{},
+							},
 						},
 					},
 				},
@@ -134,7 +138,7 @@ func TestInsertion(t *testing.T) {
 		bt.Insert(key, i)
 	}
 
-	checkTree(t, bt.root, expectedBt.root)
+	checkTree(t, bt.Root, expectedBt.Root)
 }
 
 func TestDuplicatedInsertion(t *testing.T) {
@@ -151,21 +155,23 @@ func TestDuplicatedInsertion(t *testing.T) {
 
 	ts := testSample{
 		bt: &BTree[string]{
-			t: 2,
-			root: &node[string]{
-				entries: []*entry[string]{{"B", 1}, {"D", 2}},
-				childs: []*node[string]{
-					{
-						leaf:    true,
-						entries: []*entry[string]{{"A", 3}},
-					},
-					{
-						leaf:    true,
-						entries: []*entry[string]{{"C", 4}},
-					},
-					{
-						leaf:    true,
-						entries: []*entry[string]{{"E", 5}},
+			tree: tree[string]{
+				T: 2,
+				Root: &node[string]{
+					Entries: []*entry[string]{{"B", 1}, {"D", 2}},
+					Childs: []*node[string]{
+						{
+							Leaf:    true,
+							Entries: []*entry[string]{{"A", 3}},
+						},
+						{
+							Leaf:    true,
+							Entries: []*entry[string]{{"C", 4}},
+						},
+						{
+							Leaf:    true,
+							Entries: []*entry[string]{{"E", 5}},
+						},
 					},
 				},
 			},
@@ -175,21 +181,23 @@ func TestDuplicatedInsertion(t *testing.T) {
 				keyToInsert:   "D",
 				valueToInsert: 12,
 				expectedBt: &BTree[string]{
-					t: 2,
-					root: &node[string]{
-						entries: []*entry[string]{{"B", 1}, {"D", 12}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"A", 3}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"C", 4}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"E", 5}},
+					tree: tree[string]{
+						T: 2,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"B", 1}, {"D", 12}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"A", 3}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"C", 4}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"E", 5}},
+								},
 							},
 						},
 					},
@@ -199,21 +207,23 @@ func TestDuplicatedInsertion(t *testing.T) {
 				keyToInsert:   "C",
 				valueToInsert: 14,
 				expectedBt: &BTree[string]{
-					t: 2,
-					root: &node[string]{
-						entries: []*entry[string]{{"B", 1}, {"D", 12}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"A", 3}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"C", 14}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"E", 5}},
+					tree: tree[string]{
+						T: 2,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"B", 1}, {"D", 12}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"A", 3}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"C", 14}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"E", 5}},
+								},
 							},
 						},
 					},
@@ -229,7 +239,7 @@ func TestDuplicatedInsertion(t *testing.T) {
 
 		ts.bt.Insert(tc.keyToInsert, tc.valueToInsert)
 
-		checkTree(t, ts.bt.root, tc.expectedBt.root)
+		checkTree(t, ts.bt.Root, tc.expectedBt.Root)
 	}
 }
 
@@ -247,45 +257,47 @@ func TestDeletion(t *testing.T) {
 
 	ts1 := testSample{
 		bt: &BTree[string]{
-			t: 3,
-			root: &node[string]{
-				entries: []*entry[string]{{"P", 1}},
-				childs: []*node[string]{
-					{
-						entries: []*entry[string]{{"C", 2}, {"G", 3}, {"M", 4}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"A", 5}, {"B", 6}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"D", 7}, {"E", 8}, {"F", 9}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"J", 10}, {"K", 11}, {"L", 12}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"N", 13}, {"O", 14}},
+			tree: tree[string]{
+				T: 3,
+				Root: &node[string]{
+					Entries: []*entry[string]{{"P", 1}},
+					Childs: []*node[string]{
+						{
+							Entries: []*entry[string]{{"C", 2}, {"G", 3}, {"M", 4}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"A", 5}, {"B", 6}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"D", 7}, {"E", 8}, {"F", 9}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"J", 10}, {"K", 11}, {"L", 12}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"N", 13}, {"O", 14}},
+								},
 							},
 						},
-					},
-					{
-						entries: []*entry[string]{{"T", 15}, {"X", 16}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"U", 20}, {"V", 21}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+						{
+							Entries: []*entry[string]{{"T", 15}, {"X", 16}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"U", 20}, {"V", 21}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+								},
 							},
 						},
 					},
@@ -297,45 +309,47 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "F",
 				expectedValue: 9,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						entries: []*entry[string]{{"P", 1}},
-						childs: []*node[string]{
-							{
-								entries: []*entry[string]{{"C", 2}, {"G", 3}, {"M", 4}},
-								childs: []*node[string]{
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"A", 5}, {"B", 6}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"D", 7}, {"E", 8}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"J", 10}, {"K", 11}, {"L", 12}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"N", 13}, {"O", 14}},
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"P", 1}},
+							Childs: []*node[string]{
+								{
+									Entries: []*entry[string]{{"C", 2}, {"G", 3}, {"M", 4}},
+									Childs: []*node[string]{
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"A", 5}, {"B", 6}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"D", 7}, {"E", 8}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"J", 10}, {"K", 11}, {"L", 12}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"N", 13}, {"O", 14}},
+										},
 									},
 								},
-							},
-							{
-								entries: []*entry[string]{{"T", 15}, {"X", 16}},
-								childs: []*node[string]{
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"U", 20}, {"V", 21}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+								{
+									Entries: []*entry[string]{{"T", 15}, {"X", 16}},
+									Childs: []*node[string]{
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"U", 20}, {"V", 21}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+										},
 									},
 								},
 							},
@@ -347,45 +361,47 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "M",
 				expectedValue: 4,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						entries: []*entry[string]{{"P", 1}},
-						childs: []*node[string]{
-							{
-								entries: []*entry[string]{{"C", 2}, {"G", 3}, {"L", 12}},
-								childs: []*node[string]{
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"A", 5}, {"B", 6}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"D", 7}, {"E", 8}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"J", 10}, {"K", 11}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"N", 13}, {"O", 14}},
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"P", 1}},
+							Childs: []*node[string]{
+								{
+									Entries: []*entry[string]{{"C", 2}, {"G", 3}, {"L", 12}},
+									Childs: []*node[string]{
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"A", 5}, {"B", 6}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"D", 7}, {"E", 8}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"J", 10}, {"K", 11}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"N", 13}, {"O", 14}},
+										},
 									},
 								},
-							},
-							{
-								entries: []*entry[string]{{"T", 15}, {"X", 16}},
-								childs: []*node[string]{
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"U", 20}, {"V", 21}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+								{
+									Entries: []*entry[string]{{"T", 15}, {"X", 16}},
+									Childs: []*node[string]{
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"U", 20}, {"V", 21}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+										},
 									},
 								},
 							},
@@ -397,41 +413,43 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "G",
 				expectedValue: 3,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						entries: []*entry[string]{{"P", 1}},
-						childs: []*node[string]{
-							{
-								entries: []*entry[string]{{"C", 2}, {"L", 12}},
-								childs: []*node[string]{
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"A", 5}, {"B", 6}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"D", 7}, {"E", 8}, {"J", 10}, {"K", 11}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"N", 13}, {"O", 14}},
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"P", 1}},
+							Childs: []*node[string]{
+								{
+									Entries: []*entry[string]{{"C", 2}, {"L", 12}},
+									Childs: []*node[string]{
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"A", 5}, {"B", 6}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"D", 7}, {"E", 8}, {"J", 10}, {"K", 11}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"N", 13}, {"O", 14}},
+										},
 									},
 								},
-							},
-							{
-								entries: []*entry[string]{{"T", 15}, {"X", 16}},
-								childs: []*node[string]{
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"U", 20}, {"V", 21}},
-									},
-									{
-										leaf:    true,
-										entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+								{
+									Entries: []*entry[string]{{"T", 15}, {"X", 16}},
+									Childs: []*node[string]{
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"U", 20}, {"V", 21}},
+										},
+										{
+											Leaf:    true,
+											Entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+										},
 									},
 								},
 							},
@@ -443,33 +461,35 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "D",
 				expectedValue: 7,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						entries: []*entry[string]{{"C", 2}, {"L", 12}, {"P", 1}, {"T", 15}, {"X", 16}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"A", 5}, {"B", 6}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"E", 8}, {"J", 10}, {"K", 11}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"N", 13}, {"O", 14}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"U", 20}, {"V", 21}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"C", 2}, {"L", 12}, {"P", 1}, {"T", 15}, {"X", 16}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"A", 5}, {"B", 6}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"E", 8}, {"J", 10}, {"K", 11}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"N", 13}, {"O", 14}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"U", 20}, {"V", 21}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+								},
 							},
 						},
 					},
@@ -479,33 +499,35 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "B",
 				expectedValue: 6,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						entries: []*entry[string]{{"E", 8}, {"L", 12}, {"P", 1}, {"T", 15}, {"X", 16}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"A", 5}, {"C", 2}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"J", 10}, {"K", 11}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"N", 13}, {"O", 14}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"U", 20}, {"V", 21}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"E", 8}, {"L", 12}, {"P", 1}, {"T", 15}, {"X", 16}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"A", 5}, {"C", 2}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"J", 10}, {"K", 11}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"N", 13}, {"O", 14}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"Q", 17}, {"R", 18}, {"S", 19}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"U", 20}, {"V", 21}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+								},
 							},
 						},
 					},
@@ -515,33 +537,35 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "O",
 				expectedValue: 14,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						entries: []*entry[string]{{"E", 8}, {"L", 12}, {"Q", 17}, {"T", 15}, {"X", 16}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"A", 5}, {"C", 2}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"J", 10}, {"K", 11}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"N", 13}, {"P", 1}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"R", 18}, {"S", 19}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"U", 20}, {"V", 21}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"E", 8}, {"L", 12}, {"Q", 17}, {"T", 15}, {"X", 16}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"A", 5}, {"C", 2}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"J", 10}, {"K", 11}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"N", 13}, {"P", 1}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"R", 18}, {"S", 19}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"U", 20}, {"V", 21}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+								},
 							},
 						},
 					},
@@ -551,29 +575,31 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "L",
 				expectedValue: 12,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						entries: []*entry[string]{{"E", 8}, {"Q", 17}, {"T", 15}, {"X", 16}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"A", 5}, {"C", 2}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"J", 10}, {"K", 11}, {"N", 13}, {"P", 1}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"R", 18}, {"S", 19}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"U", 20}, {"V", 21}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"E", 8}, {"Q", 17}, {"T", 15}, {"X", 16}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"A", 5}, {"C", 2}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"J", 10}, {"K", 11}, {"N", 13}, {"P", 1}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"R", 18}, {"S", 19}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"U", 20}, {"V", 21}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"Y", 22}, {"Z", 23}},
+								},
 							},
 						},
 					},
@@ -584,17 +610,19 @@ func TestDeletion(t *testing.T) {
 
 	ts2 := testSample{
 		bt: &BTree[string]{
-			t: 3,
-			root: &node[string]{
-				entries: []*entry[string]{{"L", 1}},
-				childs: []*node[string]{
-					{
-						leaf:    true,
-						entries: []*entry[string]{{"A", 2}, {"B", 3}},
-					},
-					{
-						leaf:    true,
-						entries: []*entry[string]{{"E", 4}, {"J", 5}},
+			tree: tree[string]{
+				T: 3,
+				Root: &node[string]{
+					Entries: []*entry[string]{{"L", 1}},
+					Childs: []*node[string]{
+						{
+							Leaf:    true,
+							Entries: []*entry[string]{{"A", 2}, {"B", 3}},
+						},
+						{
+							Leaf:    true,
+							Entries: []*entry[string]{{"E", 4}, {"J", 5}},
+						},
 					},
 				},
 			},
@@ -604,10 +632,12 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "L",
 				expectedValue: 1,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						leaf:    true,
-						entries: []*entry[string]{{"A", 2}, {"B", 3}, {"E", 4}, {"J", 5}},
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Leaf:    true,
+							Entries: []*entry[string]{{"A", 2}, {"B", 3}, {"E", 4}, {"J", 5}},
+						},
 					},
 				},
 			},
@@ -616,10 +646,12 @@ func TestDeletion(t *testing.T) {
 
 	ts3 := testSample{
 		bt: &BTree[string]{
-			t: 3,
-			root: &node[string]{
-				leaf:    true,
-				entries: []*entry[string]{{"W", 1}},
+			tree: tree[string]{
+				T: 3,
+				Root: &node[string]{
+					Leaf:    true,
+					Entries: []*entry[string]{{"W", 1}},
+				},
 			},
 		},
 		cases: []*testCase{
@@ -627,9 +659,11 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "W",
 				expectedValue: 1,
 				expectedBt: &BTree[string]{
-					t: 3,
-					root: &node[string]{
-						leaf: true,
+					tree: tree[string]{
+						T: 3,
+						Root: &node[string]{
+							Leaf: true,
+						},
 					},
 				},
 			},
@@ -638,21 +672,23 @@ func TestDeletion(t *testing.T) {
 
 	ts4 := testSample{
 		bt: &BTree[string]{
-			t: 2,
-			root: &node[string]{
-				entries: []*entry[string]{{"B", 1}, {"D", 2}},
-				childs: []*node[string]{
-					{
-						leaf:    true,
-						entries: []*entry[string]{{"A", 3}},
-					},
-					{
-						leaf:    true,
-						entries: []*entry[string]{{"C", 4}},
-					},
-					{
-						leaf:    true,
-						entries: []*entry[string]{{"E", 5}},
+			tree: tree[string]{
+				T: 2,
+				Root: &node[string]{
+					Entries: []*entry[string]{{"B", 1}, {"D", 2}},
+					Childs: []*node[string]{
+						{
+							Leaf:    true,
+							Entries: []*entry[string]{{"A", 3}},
+						},
+						{
+							Leaf:    true,
+							Entries: []*entry[string]{{"C", 4}},
+						},
+						{
+							Leaf:    true,
+							Entries: []*entry[string]{{"E", 5}},
+						},
 					},
 				},
 			},
@@ -662,17 +698,19 @@ func TestDeletion(t *testing.T) {
 				keyToRemove:   "C",
 				expectedValue: 4,
 				expectedBt: &BTree[string]{
-					t: 2,
-					root: &node[string]{
-						entries: []*entry[string]{{"D", 2}},
-						childs: []*node[string]{
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"A", 3}, {"B", 1}},
-							},
-							{
-								leaf:    true,
-								entries: []*entry[string]{{"E", 5}},
+					tree: tree[string]{
+						T: 2,
+						Root: &node[string]{
+							Entries: []*entry[string]{{"D", 2}},
+							Childs: []*node[string]{
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"A", 3}, {"B", 1}},
+								},
+								{
+									Leaf:    true,
+									Entries: []*entry[string]{{"E", 5}},
+								},
 							},
 						},
 					},
@@ -697,7 +735,7 @@ func TestDeletion(t *testing.T) {
 					tc.keyToRemove, value, tc.expectedValue)
 			}
 
-			checkTree(t, ts.bt.root, tc.expectedBt.root)
+			checkTree(t, ts.bt.Root, tc.expectedBt.Root)
 		}
 	}
 }
