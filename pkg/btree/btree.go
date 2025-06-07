@@ -107,7 +107,15 @@ func (bt *BTree[K]) findPos(n *node[K], k K) int {
 }
 
 func (bt *BTree[K]) insertNonNull(n *node[K], k K, v any) {
-	i := bt.findPos(n, k)
+	i := bt.findRawPos(n, k)
+
+	if i >= 0 && k == n.entries[i].k {
+		n.entries[i].v = v
+
+		return
+	}
+
+	i++
 
 	if n.leaf {
 		n.entries = append(

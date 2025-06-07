@@ -1,17 +1,42 @@
 package btree
 
 import (
+	"fmt"
 	"slices"
-	"strings"
 	"testing"
 )
 
-var staticSample = struct {
-	keys []string
-	bt   *BTree[string]
-}{
-	keys: strings.Split("F S Q K C L H T V W M R N", " "),
-	bt: &BTree[string]{
+func checkTree(t *testing.T, got *node[string], expected *node[string]) {
+	if got.leaf != expected.leaf {
+		t.Fatalf(
+			"expected leaf=%v: got=%v, expected=%v",
+			expected.leaf, got, expected)
+	}
+
+	if !slices.EqualFunc(
+		got.entries, expected.entries,
+		func(g *entry[string], e *entry[string]) bool {
+			return g.k == e.k && e.v == e.v
+		},
+	) {
+		t.Fatalf(
+			"entries aren't equal: got=%v, expected=%v",
+			got.entries, expected.entries)
+	}
+
+	if len(got.childs) != len(expected.childs) {
+		t.Fatalf(
+			"different number of childs: got=%v, expected=%v",
+			got.childs, expected.childs)
+	}
+
+	for i, expectedChild := range expected.childs {
+		checkTree(t, got.childs[i], expectedChild)
+	}
+}
+
+func TestSearch(t *testing.T) {
+	bt := &BTree[string]{
 		t: 2,
 		root: &node[string]{
 			entries: []*entry[string]{{k: "Q", v: 2}},
@@ -48,43 +73,10 @@ var staticSample = struct {
 				},
 			},
 		},
-	},
-}
-
-func checkTree(t *testing.T, got *node[string], expected *node[string]) {
-	if got.leaf != expected.leaf {
-		t.Fatalf(
-			"expected leaf=%v: got=%v, expected=%v",
-			expected.leaf, got, expected)
 	}
-
-	if !slices.EqualFunc(
-		got.entries, expected.entries,
-		func(g *entry[string], e *entry[string]) bool {
-			return g.k == e.k && e.v == e.v
-		},
-	) {
-		t.Fatalf(
-			"entries aren't equal: got=%v, expected=%v",
-			got.entries, expected.entries)
-	}
-
-	if len(got.childs) != len(expected.childs) {
-		t.Fatalf(
-			"different number of childs: got=%v, expected=%v",
-			got.childs, expected.childs)
-	}
-
-	for i, expectedChild := range expected.childs {
-		checkTree(t, got.childs[i], expectedChild)
-	}
-}
-
-func TestSearch(t *testing.T) {
-	btSample := staticSample.bt
 
 	for key, expectedValue := range map[string]any{"Q": 2, "K": 3, "S": 1} {
-		value := btSample.Search(key)
+		value := bt.Search(key)
 
 		if value == nil {
 			t.Fatalf("didn't find key \"%v\"", key)
@@ -100,28 +92,162 @@ func TestSearch(t *testing.T) {
 
 func TestInsertion(t *testing.T) {
 	bt := New[string](2)
+	expectedBt := &BTree[string]{
+		t: 2,
+		root: &node[string]{
+			entries: []*entry[string]{{k: "Q", v: 2}},
+			childs: []*node[string]{
+				{
+					entries: []*entry[string]{{k: "F", v: 0}, {k: "K", v: 3}},
+					childs: []*node[string]{{
+						leaf:    true,
+						entries: []*entry[string]{{k: "C", v: 4}},
+						childs:  []*node[string]{},
+					}, {
+						leaf:    true,
+						entries: []*entry[string]{{k: "H", v: 6}},
+						childs:  []*node[string]{},
+					}, {
+						leaf:    true,
+						entries: []*entry[string]{{k: "L", v: 5}, {k: "M", v: 10}, {k: "N", v: 12}},
+						childs:  []*node[string]{},
+					}},
+				}, {
+					entries: []*entry[string]{{k: "T", v: 7}},
+					childs: []*node[string]{
+						{
+							leaf:    true,
+							entries: []*entry[string]{{k: "R", v: 11}, {k: "S", v: 1}},
+							childs:  []*node[string]{},
+						},
+						{
+							leaf:    true,
+							entries: []*entry[string]{{k: "V", v: 8}, {k: "W", v: 9}},
+							childs:  []*node[string]{},
+						},
+					},
+				},
+			},
+		},
+	}
 
-	for i, key := range staticSample.keys {
+	for i, key := range []string{"F", "S", "Q", "K", "C", "L", "H", "T", "V", "W", "M", "R", "N"} {
 		bt.Insert(key, i)
 	}
 
-	btSample := staticSample.bt
+	checkTree(t, bt.root, expectedBt.root)
+}
 
-	checkTree(t, bt.root, btSample.root)
+func TestDuplicatedInsertion(t *testing.T) {
+	type testCase struct {
+		keyToInsert   string
+		valueToInsert int
+		expectedBt    *BTree[string]
+	}
+
+	type testSample struct {
+		bt    *BTree[string]
+		cases []*testCase
+	}
+
+	ts := testSample{
+		bt: &BTree[string]{
+			t: 2,
+			root: &node[string]{
+				entries: []*entry[string]{{"B", 1}, {"D", 2}},
+				childs: []*node[string]{
+					{
+						leaf:    true,
+						entries: []*entry[string]{{"A", 3}},
+					},
+					{
+						leaf:    true,
+						entries: []*entry[string]{{"C", 4}},
+					},
+					{
+						leaf:    true,
+						entries: []*entry[string]{{"E", 5}},
+					},
+				},
+			},
+		},
+		cases: []*testCase{
+			{
+				keyToInsert:   "D",
+				valueToInsert: 12,
+				expectedBt: &BTree[string]{
+					t: 2,
+					root: &node[string]{
+						entries: []*entry[string]{{"B", 1}, {"D", 12}},
+						childs: []*node[string]{
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"A", 3}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"C", 4}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"E", 5}},
+							},
+						},
+					},
+				},
+			},
+			{
+				keyToInsert:   "C",
+				valueToInsert: 14,
+				expectedBt: &BTree[string]{
+					t: 2,
+					root: &node[string]{
+						entries: []*entry[string]{{"B", 1}, {"D", 12}},
+						childs: []*node[string]{
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"A", 3}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"C", 14}},
+							},
+							{
+								leaf:    true,
+								entries: []*entry[string]{{"E", 5}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range ts.cases {
+		t.Logf(
+			"Testing duplicated insertion of key %v and value %v...",
+			tc.keyToInsert, tc.valueToInsert)
+
+		ts.bt.Insert(tc.keyToInsert, tc.valueToInsert)
+
+		fmt.Println(ts.bt)
+		checkTree(t, ts.bt.root, tc.expectedBt.root)
+	}
 }
 
 func TestDeletion(t *testing.T) {
-	type outcome struct {
+	type testCase struct {
 		keyToRemove   string
 		expectedValue int
 		expectedBt    *BTree[string]
 	}
-	type sample struct {
-		bt       *BTree[string]
-		outcomes []*outcome
+
+	type testSample struct {
+		bt    *BTree[string]
+		cases []*testCase
 	}
 
-	sample1 := sample{
+	ts1 := testSample{
 		bt: &BTree[string]{
 			t: 3,
 			root: &node[string]{
@@ -168,7 +294,7 @@ func TestDeletion(t *testing.T) {
 				},
 			},
 		},
-		outcomes: []*outcome{
+		cases: []*testCase{
 			{
 				keyToRemove:   "F",
 				expectedValue: 9,
@@ -458,7 +584,7 @@ func TestDeletion(t *testing.T) {
 		},
 	}
 
-	sample2 := sample{
+	ts2 := testSample{
 		bt: &BTree[string]{
 			t: 3,
 			root: &node[string]{
@@ -475,7 +601,7 @@ func TestDeletion(t *testing.T) {
 				},
 			},
 		},
-		outcomes: []*outcome{
+		cases: []*testCase{
 			{
 				keyToRemove:   "L",
 				expectedValue: 1,
@@ -490,7 +616,7 @@ func TestDeletion(t *testing.T) {
 		},
 	}
 
-	sample3 := sample{
+	ts3 := testSample{
 		bt: &BTree[string]{
 			t: 3,
 			root: &node[string]{
@@ -498,7 +624,7 @@ func TestDeletion(t *testing.T) {
 				entries: []*entry[string]{{"W", 1}},
 			},
 		},
-		outcomes: []*outcome{
+		cases: []*testCase{
 			{
 				keyToRemove:   "W",
 				expectedValue: 1,
@@ -512,7 +638,7 @@ func TestDeletion(t *testing.T) {
 		},
 	}
 
-	sample4 := sample{
+	ts4 := testSample{
 		bt: &BTree[string]{
 			t: 2,
 			root: &node[string]{
@@ -533,7 +659,7 @@ func TestDeletion(t *testing.T) {
 				},
 			},
 		},
-		outcomes: []*outcome{
+		cases: []*testCase{
 			{
 				keyToRemove:   "C",
 				expectedValue: 4,
@@ -557,23 +683,23 @@ func TestDeletion(t *testing.T) {
 		},
 	}
 
-	for i, sample := range []sample{sample1, sample2, sample3, sample4} {
-		for _, outcome := range sample.outcomes {
-			t.Logf("Testing deletion of key %v (sample %v)...", outcome.keyToRemove, i+1)
+	for i, ts := range []testSample{ts1, ts2, ts3, ts4} {
+		for _, tc := range ts.cases {
+			t.Logf("Testing deletion of key %v (sample %v)...", tc.keyToRemove, i+1)
 
-			value := sample.bt.Delete(outcome.keyToRemove)
+			value := ts.bt.Delete(tc.keyToRemove)
 
 			if value == nil {
-				t.Fatalf("didn't find key \"%v\"", outcome.keyToRemove)
+				t.Fatalf("didn't find key \"%v\"", tc.keyToRemove)
 			}
 
-			if value != outcome.expectedValue {
+			if value != tc.expectedValue {
 				t.Fatalf(
 					"got different value for key \"%v\": got=%v expected=%v",
-					outcome.keyToRemove, value, outcome.expectedValue)
+					tc.keyToRemove, value, tc.expectedValue)
 			}
 
-			checkTree(t, sample.bt.root, outcome.expectedBt.root)
+			checkTree(t, ts.bt.root, tc.expectedBt.root)
 		}
 	}
 }
