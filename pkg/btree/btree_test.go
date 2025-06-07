@@ -1,7 +1,6 @@
 package btree
 
 import (
-	"fmt"
 	"slices"
 	"testing"
 )
@@ -225,12 +224,11 @@ func TestDuplicatedInsertion(t *testing.T) {
 
 	for _, tc := range ts.cases {
 		t.Logf(
-			"Testing duplicated insertion of key %v and value %v...",
+			"Testing duplicated insertion with key-value pair (%v, %v)...",
 			tc.keyToInsert, tc.valueToInsert)
 
 		ts.bt.Insert(tc.keyToInsert, tc.valueToInsert)
 
-		fmt.Println(ts.bt)
 		checkTree(t, ts.bt.root, tc.expectedBt.root)
 	}
 }
